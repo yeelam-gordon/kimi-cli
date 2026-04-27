@@ -585,7 +585,10 @@ def kimi(
             import os as _runtime_status_os
 
             from kimi_cli.runtime_status import write_runtime_status
-            from kimi_cli.utils.proctitle import set_session_process_title
+            from kimi_cli.utils.proctitle import (
+                set_session_process_title,
+                update_terminal_title_for_session,
+            )
 
             set_session_process_title(session.id, str(work_dir))
             with _runtime_status_contextlib.suppress(OSError):
@@ -597,6 +600,19 @@ def kimi(
                 )
                 runtime_status_written = True
                 runtime_status_session = session
+
+            # Refresh the terminal tab/window title with the live session
+            # context so users with many tabs can identify each one. Skip
+            # the "Untitled" placeholder that Session.refresh() assigns to
+            # empty sessions; otherwise every fresh tab would display the
+            # noisy and identical "Untitled" topic.
+            _initial_topic = session.state.custom_title or session.title or None
+            if _initial_topic == "Untitled":
+                _initial_topic = None
+            update_terminal_title_for_session(
+                work_dir=str(work_dir),
+                topic=_initial_topic,
+            )
 
             nonlocal _latest_created_session
             _latest_created_session = session
